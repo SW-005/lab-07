@@ -24,18 +24,28 @@ evals<-read.csv("data/evals.csv", row.names=1)
 1.  Visualize the distribution of `score` in the dataframe `evals`.
 
 ```{r viz-score}
-# add code here
+evals %>%
+  ggplot(mapping = aes(x = score)) +
+  geom_histogram()
 ```
 
-*Add your other details and narratives here.*
+skewed to the left
 
 2.  Visualize and describe the relationship between `score` and `bty_avg` using `geom_point()` to represent the data. 
 
 ```{r scatterplot}
-# add code here
+evals %>%
+  ggplot(mapping = aes(x = score, y = bty_avg)) +
+  geom_jitter() +
+  geom_smooth()
+
+evals %>%
+  ggplot(mapping = aes(x = score, y = bty_avg)) +
+  geom_point()
+
 ```
 
-*Add your narrative and other details here.*
+The jitter geom is a convenient shortcut for geom_point(position = "jitter"). It adds a small amount of random variation to the location of each point, and is a useful way of handling overplotting caused by discreteness in smaller datasets.
 
 # Exercise 2: Simple Linear regression with a numerical predictor
 
@@ -45,12 +55,12 @@ evals<-read.csv("data/evals.csv", row.names=1)
 # remove eval = FALSE from the code chunk options after filling in the blanks
 score_bty_fit <- linear_reg() %>%
   set_engine("lm") %>%
-  fit(___ ~ ___, data = ___)
+  fit(score ~ bty_avg, data = evals)
 ```
 
 ```{r tidy-score_bty_fit, eval = FALSE}
 # remove eval = FALSE from the code chunk options after filling in the blanks
-tidy(___)
+tidy()
 ```
 
 *Add your linear model here. Don't worry too much about notation, you can use things like score-hat.*
@@ -58,25 +68,28 @@ tidy(___)
 2. Plot the data again using `geom_jitter()`, and add the regression line.
 
 ```{r viz-score_bty_fit,eval=FALSE}
-# add your plot here. Hint, you can add the regression line using geom_smooth()
+evals %>%
+  ggplot(mapping = aes(x = score, y = bty_avg)) +
+  geom_jitter() +
+  geom_smooth(method = "lm")
 ```
 
 3. Interpret the slope of the linear model in context of the data.
 
-*Add your interpretation here*
+an average change of 0.06663704 in bty_avg, when score is increase by 1.
 
 4. Interpret the intercept of the linear model in context of the data. Comment on whether or not the intercept makes sense in this context.
 
-*Add your interpretation here*
+when the score is 0, the bty_avg = 3.88
 
 5. Determine the $R^2$ of the model and interpret it in the context of the data.
 
 ```{r R2, eval = FALSE}
 # remove eval = FALSE from the code chunk options after filling in the blanks
-glance(___)$___
+glance(score_bty_fit)$r.squared
 ```
 
-*Add your interpretation here*
+the relation between the two given variables are not strong enough
 
 6. Make a plot of residuals vs. predicted values for the model above.
 
@@ -84,7 +97,11 @@ glance(___)$___
 # remove eval = FALSE from the code chunk options after filling in the blanks
 score_bty_aug <- augment(score_bty_fit$fit)
 
-ggplot(___) + ...
+ggplot(data = score_bty_aug, mapping = aes(x = .fitted, y = .resid)) +
+  geom_jitter() +
+  geom_hline(yintercept = 0, lty = "dashed") 
+
+# not appropriate, since the residual is not evenly ditributed above and below the y=0 line.
 ```
 
 # Exercise 3: Simple Linear regression with a categorical predictor
@@ -98,9 +115,11 @@ ggplot(___) + ...
 1. Fit a new linear model called `score_rank_fit` to predict average professor evaluation `score` based on `rank` of the professor.
 
 ```{r fit-score_rank_fit}
-# fit model
-
-# tidy model output
+score_rank_fit <- linear_reg() %>%
+  set_engine("lm") %>%
+  fit(score ~ rank, data = evals) %>%
+  tidy()
+  
 ```
 
 *Add your narrative here.*
@@ -108,9 +127,10 @@ ggplot(___) + ...
 2. Fit a new linear model called `score_gender_fit` to predict average professor evaluation `score` based on `gender` of the professor. 
 
 ```{r fit-score_gender_fit}
-# fit model
-
-# tidy model output
+score_gender_fit <- linear_reg() %>%
+  set_engine("lm") %>%
+  fit(score ~ gender, data = evals) %>%
+  tidy()
 ```
 
 ```{r score_gender_intercept, eval=FALSE}
@@ -129,49 +149,54 @@ score_gender_slope <- tidy(score_gender_fit) %>%
   pull()
 ```
 
-*Add your narrative here. Use in-line code!*
+score_gender_intercept <- tidy(score_gender_fit)$estimate[1]
 
 # Exercise 4: Multiple linear regression
 
 1. Fit a multiple linear regression model, predicting average professor evaluation `score` based on average beauty rating (`bty_avg`) and `gender.`
 
 ```{r fit-score_bty_gender_fit}
-# fit model
-
-# tidy model output
+score_bty_gender_fit <- linear_reg() %>%
+  set_engine("lm") %>%
+  fit(score ~ bty_avg + gender, data = evals) %>%
+  tidy()
 ```
 
 *Add your narrative here.*
 
 ```{r eval = FALSE}
-ggplot(___) + ...
+evals %>%
+ggplot(mapping = aes(x = score, y = bty_avg)) + 
+  geom_jitter(mapping = aes(color = gender))
 ```
 
 2. What percent of the variability in `score` is explained by the model `score_bty_gender_fit`. 
 
 ```{r}
-# ...
+glance(score_bty_gender_fit)$r.squared
+
+# 0.059
 ```
 
 
 3. What is the equation of the line corresponding to just male professors?
 
-*Add your equation here.*
+y = 0.17238955 * x1 + 0.07415537 * x2 + 3.74733824
 
 4. For two professors who received the same beauty rating, which gender tends to have the higher course evaluation score?
 
-*Add your narrative here.*
+male
 
 5. How does the relationship between beauty and evaluation score vary between male and female professors?
 
-*Add your narrative here.*
+r^2 of male prof tends to be higher
 
 6. How do the adjusted $R^2$ values of `score_bty_fit` and `score_bty_gender_fit` compare? 
 
 ```{r eval=FALSE}
 # remove eval = FALSE from the code chunk options after filling in the blanks
-glance(___)$adj.r.squared
-glance(___)$adj.r.squared
+glance(score_bty_fit)$adj.r.squared
+glance(score_bty_gender_fit)$adj.r.squared
 ```
 
 *Add your narrative here.*
